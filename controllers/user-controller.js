@@ -1,5 +1,7 @@
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
+const sendEmail = require("../utils/sendEmail");
 
 exports.getUsers = async (req, res) => {
   try {
@@ -12,7 +14,7 @@ exports.getUsers = async (req, res) => {
 
 exports.getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select("-contraseña");
+    const user = await User.findById(req.params.id).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json(user);
   } catch (error) {
@@ -53,5 +55,48 @@ exports.activeToggle = async (req, res) => {
     res.json({ message: `User ${user.active ? "activated" : "inactive"}` });
   } catch (error) {
     res.status(500).json({ message: "Error changing user state" });
+  }
+};
+exports.requestPasswordReset = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const token = crypto.randomBytes(32).toString("hex");
+
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = Date.now() + 1000 * 60 * 30; 
+    await user.save();
+
+    const link = `${token}`;
+    await sendEmail(email, "Reset password", `Token to reset password:${link}`);
+
+    res.json({ message: "Email sent" });
+  } catch (error) {
+    res.status(500).json({ message: "Error sending the email" });
+  }
+};
+exports.resetPassword = async (req, res) => {
+  const { password } = req.body;
+  const { token } = req.params;
+
+  try {
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) return res.status(400).json({ message: "Invalid Token" });
+
+    user.password = await bcrypt.hash(password, 10);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
+    await user.save();
+    res.json({ message: "Password has been reset" });
+  } catch (error) {
+    res.status(500).json({ message: "Error at changing password" });
   }
 };

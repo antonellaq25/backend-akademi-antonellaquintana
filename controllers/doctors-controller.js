@@ -31,24 +31,40 @@ exports.createDoctor = async (req, res) => {
 
 exports.updateDoctor = async (req, res) => {
   try {
-    const {name, speciality, start, end} = req.body;
+    const doctor = await Doctor.findById(req.params.id);
+
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor not found' });
+    }
+
+    const { name, speciality, start, end, active } = req.body;
+
+    if (!doctor.active && typeof active === 'undefined') {
+      return res.status(403).json({ 
+        message: 'Doctor is disabled. Only "active" status can be updated.'
+      });
+    }
+
+    const updateFields = {};
+    if (doctor.active) {
+      if (name !== undefined) updateFields.name = name;
+      if (speciality !== undefined) updateFields.speciality = speciality;
+      if (start !== undefined) updateFields.start = start;
+      if (end !== undefined) updateFields.end = end;
+    }
+    if (typeof active !== 'undefined') {
+      updateFields.active = active;
+    }
+
     const updatedDoctor = await Doctor.findByIdAndUpdate(
       req.params.id,
-      {name, speciality, start, end},
-      {new: true, runValidators: true}
+      updateFields,
+      { new: true, runValidators: true }
     );
-    if (!updatedDoctor) return  res.status(404).json({ message: 'Could not find doctor' });
+
     res.status(200).json(updatedDoctor);
   } catch (err) {
     res.status(400).json({ message: 'Error updating doctor', error: err });
   }
 };
-exports.deleteDoctor = async (req, res) => {
-  try {
-    const doctor = await Doctor.findByIdAndUpdate(req.params.id, { active: false }, { new: true });
-    if (!doctor) return res.status(404).json({ message: "Doctor not found" });
-    res.json({ message: "Doctor disabled successfully", doctor });
-  } catch (error) {
-    res.status(500).json({ message: "Error disabling doctor", error });
-  }
-};
+

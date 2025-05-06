@@ -4,14 +4,19 @@ const {
   getUsers,
   getUserById,
   upadateUser,
-  activeToggle
+  activeToggle,
+  requestPasswordReset,
+  resetPassword,
 } = require("../controllers/user-controller");
 
 const auth = require("../middlewares/authMiddleware");
 const role = require("../middlewares/roleMiddleware");
 
-router.use(auth); 
-router.use(role(["admin"])); 
+router.post("/reset-password", requestPasswordReset);
+router.post("/reset-password/:token", resetPassword);
+
+router.use(auth);
+router.use(role(["admin"]));
 
 router.get("/", getUsers);
 router.get("/:id", getUserById);
