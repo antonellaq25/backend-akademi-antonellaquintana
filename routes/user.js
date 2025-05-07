@@ -3,8 +3,9 @@ const router = express.Router();
 const {
   getUsers,
   getUserById,
-  upadateUser,
+  updateUser,
   activeToggle,
+  deleteUser,
   requestPasswordReset,
   resetPassword,
 } = require("../controllers/user-controller");
@@ -20,7 +21,8 @@ router.use(role(["admin"]));
 
 router.get("/", getUsers);
 router.get("/:id", getUserById);
-router.put("/:id", upadateUser);
+router.put("/:id", updateUser);
 router.patch("/:id/toggle", activeToggle);
+router.delete("/:id", deleteUser);
 
 module.exports = router;

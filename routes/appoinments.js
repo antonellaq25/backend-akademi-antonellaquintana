@@ -2,12 +2,14 @@ const express = require("express");
 const router = express.Router();
 const {
   getAllAppointments,
-  getAppointmentById,
+  getAppointmentByFilters,
   createAppointment,
-  updateAppointmentStatus
+  updateAppointmentStatus,
+  getAppointmentById
 } = require("../controllers/appointment-controller");
 
 router.get("/", getAllAppointments);
+router.get("/filter", getAppointmentByFilters);
 router.get("/:id", getAppointmentById);
 router.post("/", createAppointment);
 router.patch("/:id", updateAppointmentStatus);

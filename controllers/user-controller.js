@@ -22,7 +22,7 @@ exports.getUserById = async (req, res) => {
   }
 };
 
-exports.upadateUser = async (req, res) => {
+exports.updateUser = async (req, res) => {
   const { name, email, role, password } = req.body;
 
   try {
@@ -98,5 +98,15 @@ exports.resetPassword = async (req, res) => {
     res.json({ message: "Password has been reset" });
   } catch (error) {
     res.status(500).json({ message: "Error at changing password" });
+  }
+};
+exports.deleteUser = async (req, res) => {
+  try {
+    const deletedUser= await User.findByIdAndDelete(req.params.id);
+    if(!deletedUser) return res.status(404).json({ message: 'Could not find user' });
+    res.status(200).json(deletedUser);
+
+  } catch (err) {
+    res.status(500).json({ message: 'Error deleting user', error: err });
   }
 };

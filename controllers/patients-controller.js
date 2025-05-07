@@ -1,13 +1,34 @@
 const Patient = require('../models/patient');
 
-exports.getPatients = async (req,res) => {
+exports.getPatients = async (req, res) => {
   try {
-    const patients = await Patient.find();
-    res.status(200).json(patients);
+    const { dni, name, coverage, page = 1, limit = 5 } = req.query;
+
+    const filters = {};
+    if (dni) filters.dni = dni;
+    if (name) filters.name = { $regex: name, $options: 'i' };
+    if (coverage) filters.coverage = { $regex: coverage, $options: 'i' };
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const total = await Patient.countDocuments(filters);
+
+    const patients = await Patient.find(filters)
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    res.status(200).json({
+      total,
+      page: parseInt(page),
+      totalPages: Math.ceil(total / limit),
+      results: patients,
+    });
   } catch (err) {
-    res.status(500).json({message: 'Error getting patients', error: err});
+    res.status(500).json({ message: 'Error getting patients', error: err });
   }
 };
+
+
 exports.getPatientById = async (req, res) => {
   try {
     const patient = await Patient.findById(req.params.id);
@@ -20,8 +41,8 @@ exports.getPatientById = async (req, res) => {
 
 exports.createPatient = async (req, res) => {
   try {
-    const {name, dni, coverage} = req.body;
-    const newDPatient = new Patient({name, dni, coverage});
+    const {name,lastName, dni, coverage} = req.body;
+    const newDPatient = new Patient({name,lastName, dni, coverage});
     await newDPatient.save();
     res.status(201).json(newDPatient);  
   } catch (err) {
