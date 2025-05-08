@@ -1,5 +1,6 @@
 const Appointment = require("../models/appointment");
 const Doctor = require("../models/doctor");
+const sendAppointmentReminder = require("../utils/sendAppointmentReminder");
 
 const getAllAppointments = async (req, res) => {
   try {
@@ -53,7 +54,11 @@ const createAppointment = async (req, res) => {
   const { patientId, doctorId, date, time } = req.body;
 
   try {
-    const existingAppointment = await Appointment.findOne({ doctorId, date, time });
+    const existingAppointment = await Appointment.findOne({
+      doctorId,
+      date,
+      time,
+    });
     if (existingAppointment) {
       return res.status(400).json({ message: "Shift taken" });
     }
@@ -77,7 +82,6 @@ const createAppointment = async (req, res) => {
   }
 };
 
-
 const updateAppointmentStatus = async (req, res) => {
   const { status } = req.body;
   const validStates = ["confirmed", "cancelled"];
@@ -91,9 +95,23 @@ const updateAppointmentStatus = async (req, res) => {
       req.params.id,
       { status },
       { new: true }
-    );
+    )
+      .populate("patientId")
+      .populate("doctorId");
+
     if (!appointment)
       return res.status(404).json({ message: "Could not find shift" });
+
+    if (status === "confirmed") {
+      await sendAppointmentReminder({
+        patientEmail: appointment.patientId.email,
+        patientName: appointment.patientId.name,
+        doctorName: appointment.doctorId.name,
+        date: appointment.date,
+        time: appointment.time,
+      });
+    }
+
     res.json(appointment);
   } catch (err) {
     res.status(500).json({ message: err.message });

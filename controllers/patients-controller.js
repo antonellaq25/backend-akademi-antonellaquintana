@@ -1,12 +1,14 @@
 const Patient = require('../models/patient');
+const Appointment = require("../models/appointment");
 
 exports.getPatients = async (req, res) => {
   try {
-    const { dni, name, coverage, page = 1, limit = 5 } = req.query;
+    const { dni, name, coverage,email, page = 1, limit = 5 } = req.query;
 
     const filters = {};
     if (dni) filters.dni = dni;
     if (name) filters.name = { $regex: name, $options: 'i' };
+    if (email) filters.email = { $regex: email, $options: 'i' };
     if (coverage) filters.coverage = { $regex: coverage, $options: 'i' };
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -41,8 +43,8 @@ exports.getPatientById = async (req, res) => {
 
 exports.createPatient = async (req, res) => {
   try {
-    const {name,lastName, dni, coverage} = req.body;
-    const newDPatient = new Patient({name,lastName, dni, coverage});
+    const {name,lastName, dni, coverage, email} = req.body;
+    const newDPatient = new Patient({name,lastName, dni, email, coverage});
     await newDPatient.save();
     res.status(201).json(newDPatient);  
   } catch (err) {
@@ -66,11 +68,29 @@ exports.updatePatient = async (req, res) => {
 };
 exports.deletePatient = async (req, res) => {
   try {
-    const deletedPatient= await Patient.findByIdAndDelete(req.params.id);
-    if(!deletedPatient) return res.status(404).json({ message: 'Could not find patient' });
-    res.status(200).json(deletedPatient);
+    const patientId = req.params.id;
+
+    const hasActiveAppointments = await Appointment.exists({
+      patientId,
+      status: { $ne: "cancelled" }
+    });
+
+    if (hasActiveAppointments) {
+      return res.status(400).json({
+        message: "Cannot delete, pending shift"
+      });
+    }
+    const deletedPatient = await Patient.findByIdAndDelete(patientId);
+    if (!deletedPatient) {
+      return res.status(404).json({ message: "Patient not found" });
+    }
+
+    res.status(200).json({
+      message: "Patient successfully deleted",
+      data: deletedPatient
+    });
 
   } catch (err) {
-    res.status(500).json({ message: 'Error deleting patient', error: err });
+    res.status(500).json({ message: "Error deleting patient", error: err });
   }
 };
