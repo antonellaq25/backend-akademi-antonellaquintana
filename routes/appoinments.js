@@ -8,6 +8,8 @@ const {
   getAppointmentById
 } = require("../controllers/appointment-controller");
 
+const auth = require("../middlewares/authMiddleware");
+router.use(auth);
 router.get("/", getAllAppointments);
 router.get("/filter", getAppointmentByFilters);
 router.get("/:id", getAppointmentById);
