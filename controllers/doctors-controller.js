@@ -1,3 +1,4 @@
+const PDFDocument = require("pdfkit");
 const Doctor = require("../models/doctor");
 const Appointment = require("../models/appointment");
 
@@ -93,7 +94,7 @@ exports.updateDoctor = async (req, res) => {
 
     if (doctor.active && active === false) {
       const hasAppointments = await Appointment.exists({
-        doctorId: doctor._id,
+        doctorId: doctor._doctorId,
       });
       if (hasAppointments) {
         return res.status(400).json({
@@ -153,3 +154,46 @@ exports.deleteDoctor = async (req, res) => {
     res.status(500).json({ message: "Error deleting doctor", error: err });
   }
 };
+
+exports.generateMostRequestedDoctorsReport = async (req, res) => {
+  try {
+
+    const appointments = await Appointment.aggregate([
+      { $group: { _id: "$doctorId", totalAppointments: { $sum: 1 } } },
+      { $sort: { totalAppointments: -1 } }
+    ]);
+    console.log(appointments)
+   
+    const groupedAppoinments = await Promise.all(
+      appointments.map(async (appoinment) => {
+        const doctor = await Doctor.findById(appoinment._id);
+        return {
+          name: doctor?.name || "Unknown",
+          speciality: doctor?.speciality || "N/A",
+          totalAppointments: appoinment.totalAppointments
+        };
+      })
+    );
+    console.log(groupedAppoinments)
+
+    const doc = new PDFDocument();
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "attachment; filename=most-requested-doctors.pdf");
+    doc.pipe(res);
+
+    doc.fontSize(20).text("Most requested doctors", { align: "center" });
+    doc.moveDown();
+
+    groupedAppoinments.forEach((docEntry, index) => {
+      doc
+        .fontSize(12)
+        .text(`${index + 1}. Dr. ${docEntry.name} - ${docEntry.speciality} - Appoinments: ${docEntry.totalAppointments}`);
+    });
+
+    doc.end();
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    res.status(500).json({ message: "Error generating report" });
+  }
+};
+
