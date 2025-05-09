@@ -11,6 +11,6 @@ router.get('/', doctorsController.getAllDoctors);
 router.get('/filter', doctorsController.getDoctorsByFilters);
 router.get('/:id', doctorsController.getDoctorById);
 router.post('/',doctorsController.createDoctor);
-router.put('/:id',doctorsController.updateDoctor);
+router.patch('/:id',doctorsController.updateDoctor);
 
 module.exports = router;

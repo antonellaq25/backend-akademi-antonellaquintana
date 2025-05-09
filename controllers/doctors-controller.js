@@ -91,10 +91,11 @@ exports.updateDoctor = async (req, res) => {
     }
 
     const { name, speciality, start, end, active } = req.body;
-
+    console.log("doctor active" ,doctor.active)
+    console.log("param" ,active)
     if (doctor.active && active === false) {
       const hasAppointments = await Appointment.exists({
-        doctorId: doctor._doctorId,
+        doctorId: doctor.id,
       });
       if (hasAppointments) {
         return res.status(400).json({
