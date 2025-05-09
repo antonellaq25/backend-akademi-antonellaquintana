@@ -66,12 +66,21 @@ exports.getPatientById = async (req, res) => {
 
 exports.createPatient = async (req, res) => {
   try {
-    const {name,lastName, dni, coverage, email} = req.body;
-    const newDPatient = new Patient({name,lastName, dni, email, coverage});
-    await newDPatient.save();
-    res.status(201).json(newDPatient);  
+    const { name, lastName, dni, coverage, email } = req.body;
+
+    const existingPatient = await Patient.findOne({ dni });
+    if (existingPatient) {
+      return res.status(400).json({
+        message: `Patient with DNI ${dni} already exists.`
+      });
+    }
+
+    const newPatient = new Patient({ name, lastName, dni, email, coverage });
+    await newPatient.save();
+
+    res.status(201).json(newPatient);
   } catch (err) {
-    res.status(400).json({ message: 'Error creating patient', error: err });
+    res.status(400).json({ message: "Error creating patient", error: err });
   }
 };
 
