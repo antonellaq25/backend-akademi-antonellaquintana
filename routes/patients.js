@@ -4,7 +4,8 @@ const patientsController = require('../controllers/patients-controller');
 const auth = require("../middlewares/authMiddleware");
 router.use(auth);
 
-router.get('/', patientsController.getPatients);
+router.get('/', patientsController.getAllPatients);
+router.get('/filter', patientsController.getPatientsByFilters);
 router.get('/:id', patientsController.getPatientById);
 router.post('/',patientsController.createPatient);
 router.put('/:id',patientsController.updatePatient);

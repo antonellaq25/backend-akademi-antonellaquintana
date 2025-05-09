@@ -1,7 +1,30 @@
 const Patient = require('../models/patient');
 const Appointment = require("../models/appointment");
 
-exports.getPatients = async (req, res) => {
+exports.getAllPatients = async (req, res) => {
+  try {
+    const { page = 1, limit = 5 } = req.query;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const total = await Patient.countDocuments({});
+    const patients = await Patient.find({})
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    res.status(200).json({
+      total,
+      page: parseInt(page),
+      totalPages: Math.ceil(total / limit),
+      results: patients,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching patients", error: err.message });
+  }
+};
+
+
+exports.getPatientsByFilters = async (req, res) => {
   try {
     const { dni, name, coverage,email, page = 1, limit = 5 } = req.query;
 
